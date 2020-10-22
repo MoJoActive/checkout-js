@@ -292,7 +292,6 @@ export function mapToShippingProps({
     const {
         checkoutSettings: {
             enableOrderComments,
-            features,
             hasMultiShippingEnabled,
             googleMapsApiKey,
         },
@@ -317,9 +316,6 @@ export function mapToShippingProps({
     );
     const countriesWithAutocomplete = ['US', 'CA', 'AU', 'NZ'];
 
-    if (features['CHECKOUT-4183.checkout_google_address_autocomplete_uk']) {
-        countriesWithAutocomplete.push('GB');
-    }
 
     const shippingAddress = !shouldShowMultiShipping && consignments.length > 1 ? undefined : getShippingAddress();
 

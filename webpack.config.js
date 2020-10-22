@@ -26,7 +26,7 @@ const BABEL_PRESET_ENV_CONFIG = {
             'not Android < 62',
         ],
     },
-    useBuiltIns: 'usage',
+    useBuiltIns: 'entry',
     modules: false,
 };
 

@@ -148,14 +148,9 @@ function mapToBillingProps({
     const {
         enableOrderComments,
         googleMapsApiKey,
-        features,
     } = config.checkoutSettings;
 
     const countriesWithAutocomplete = ['US', 'CA', 'AU', 'NZ'];
-
-    if (features['CHECKOUT-4183.checkout_google_address_autocomplete_uk']) {
-        countriesWithAutocomplete.push('GB');
-    }
 
     return {
         billingAddress: getBillingAddress(),

@@ -11,7 +11,7 @@ interface ShippingOptionAdditionalDescriptionProps {
 const ShippingOptionAdditionalDescription: React.FunctionComponent<ShippingOptionAdditionalDescriptionProps> = ({
 description,
 }) => {
-    const CHRACTER_LIMIT = 45;
+    const CHRACTER_LIMIT = 200;
 
     return (
         <div className="shippingOption-additionalDescription--container">

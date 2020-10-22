@@ -74,6 +74,7 @@
   "devDependencies": {
     "@babel/core": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
+    "@babel/runtime-corejs3": "^7.12.1",
     "@bigcommerce/eslint-config": "^1.0.0",
     "@bigcommerce/tslint-config": "^4.0.1",
     "@types/enzyme": "^3.10.3",
@@ -103,6 +104,7 @@
     "mini-css-extract-plugin": "^0.8.0",
     "node-sass": "^4.13.1",
     "react-test-renderer": "^16.8.6",
+    "regenerator-runtime": "^0.13.7",
     "sass-loader": "^7.1.0",
     "semver": "^6.3.0",
     "source-map-loader": "^0.2.4",
