@@ -1,17 +1,17 @@
-import { CheckoutSelectors, Consignment, ShippingOption } from '@bigcommerce/checkout-sdk';
-import { withFormik, FormikProps } from 'formik';
-import { noop } from 'lodash';
-import React, { PureComponent, ReactNode } from 'react';
+import { CheckoutSelectors, Consignment, ShippingOption } from "@bigcommerce/checkout-sdk";
+import { withFormik, FormikProps } from "formik";
+import { noop } from "lodash";
+import React, { PureComponent, ReactNode } from "react";
 
-import { StaticAddress } from '../../address';
-import { TranslatedString } from '../../locale';
-import { LoadingOverlay } from '../../ui/loading';
-import getRecommendedShippingOption from '../getRecommendedShippingOption';
-import StaticConsignmentItemList from '../StaticConsignmentItemList';
+import { StaticAddress } from "../../address";
+import { TranslatedString } from "../../locale";
+import { LoadingOverlay } from "../../ui/loading";
+import getRecommendedShippingOption from "../getRecommendedShippingOption";
+import StaticConsignmentItemList from "../StaticConsignmentItemList";
 
-import { ShippingOptionsProps, WithCheckoutShippingOptionsProps } from './ShippingOptions';
-import './ShippingOptionsForm.scss';
-import ShippingOptionsList from './ShippingOptionsList';
+import { ShippingOptionsProps, WithCheckoutShippingOptionsProps } from "./ShippingOptions";
+import "./ShippingOptionsForm.scss";
+import ShippingOptionsList from "./ShippingOptionsList";
 
 export type ShippingOptionsFormProps = ShippingOptionsProps & WithCheckoutShippingOptionsProps;
 
@@ -31,20 +31,43 @@ class ShippingOptionsForm extends PureComponent<ShippingOptionsFormProps & Formi
   }
 
   customShippingOptions(options: any): any {
-    const methodSortOrder: string[] = ['Shipping (Ground)', 'Shipping (Pickup)'];
+    const methodSortOrder: string[] = ["Shipping (Ground)", "Shipping (Pickup)"];
 
-    return options.map((o: ShippingOption) => {
-      switch (o.description) {
-        case 'Shipping (Free Shipping)':
-            return ({...o, oldDescription: o.description, description: 'Free Shipping', additionalDescription: 'Free shipping on orders over $175 for select states.', isRecommended: true });
-        case 'Shipping (Ground)':
-            return ({...o, oldDescription: o.description, description: 'Ground Shipping', additionalDescription: 'Your package will arrive within 3 business days after shipping.', isRecommended: true });
-        case 'Shipping (Pickup)':
-            return ({...o, oldDescription: o.description, description: 'Pickup - In Store', additionalDescription: 'An email will be sent when your order is ready for Pickup.', isRecommended: false});
+    return options
+      .map((o: ShippingOption) => {
+        switch (o.description) {
+          case "Shipping (Free Shipping)":
+          case "Free Shipping":
+            return {
+              ...o,
+              oldDescription: o.description,
+              description: "Free Shipping",
+              additionalDescription: "Free shipping on orders over $175 for select states.",
+              isRecommended: true,
+            };
+          case "Shipping (Ground)":
+          case "Ground":
+            return {
+              ...o,
+              oldDescription: o.description,
+              description: "Ground Shipping",
+              additionalDescription: "Your package will arrive within 3 business days after shipping.",
+              isRecommended: true,
+            };
+          case "Shipping (Pickup)":
+          case "Pickup":
+            return {
+              ...o,
+              oldDescription: o.description,
+              description: "Pickup - In Store",
+              additionalDescription: "An email will be sent when your order is ready for Pickup.",
+              isRecommended: false,
+            };
           default:
-              return o;
-      }
-    }).sort((a: any, b: any) => methodSortOrder.indexOf(a.oldDescription) - methodSortOrder.indexOf(b.oldDescription));
+            return o;
+        }
+      })
+      .sort((a: any, b: any) => methodSortOrder.indexOf(a.oldDescription) - methodSortOrder.indexOf(b.oldDescription));
   }
 
   render(): ReactNode {
@@ -60,43 +83,43 @@ class ShippingOptionsForm extends PureComponent<ShippingOptionsFormProps & Formi
 
     if (!consignments || !consignments.length || !shouldShowShippingOptions) {
       return (
-        <LoadingOverlay isLoading={ isLoading() }>
-          { this.renderNoShippingOptions(
+        <LoadingOverlay isLoading={isLoading()}>
+          {this.renderNoShippingOptions(
             <TranslatedString
-                id={ methodId || isMultiShippingMode ? 'shipping.select_shipping_address_text' : 'shipping.enter_shipping_address_text' }
+              id={methodId || isMultiShippingMode ? "shipping.select_shipping_address_text" : "shipping.enter_shipping_address_text"}
             />
-          ) }
+          )}
         </LoadingOverlay>
       );
     }
 
     return (
       <>
-        { consignments
+        {consignments
           .slice(0, isMultiShippingMode ? undefined : 1)
           .sort((a, b) => (a.id > b.id ? -1 : 1))
-          .map(consignment => (
-              <div className="shippingOptions-container form-fieldset" key={ consignment.id }>
-              { isMultiShippingMode && this.renderConsignment(consignment) }
+          .map((consignment) => (
+            <div className="shippingOptions-container form-fieldset" key={consignment.id}>
+              {isMultiShippingMode && this.renderConsignment(consignment)}
 
               <ShippingOptionsList
-                  consignmentId={ consignment.id }
-                  inputName={ getRadioInputName(consignment.id) }
-                  isLoading={ isLoading(consignment.id) }
-                  onSelectedOption={ selectShippingOption }
-                  selectedShippingOptionId={ consignment.selectedShippingOption && consignment.selectedShippingOption.id }
-                  shippingOptions={ this.customShippingOptions(consignment.availableShippingOptions) }
+                consignmentId={consignment.id}
+                inputName={getRadioInputName(consignment.id)}
+                isLoading={isLoading(consignment.id)}
+                onSelectedOption={selectShippingOption}
+                selectedShippingOptionId={consignment.selectedShippingOption && consignment.selectedShippingOption.id}
+                shippingOptions={this.customShippingOptions(consignment.availableShippingOptions)}
               />
 
-              <div style={ { fontWeight: 'bold', marginTop: 5 } }>Please note that we ship Monday-Thursday.</div>
+              <div style={{ fontWeight: "bold", marginTop: 5 }}>Please note that we ship Monday-Thursday.</div>
 
-              { (!consignment.availableShippingOptions || !consignment.availableShippingOptions.length) && (
-                <LoadingOverlay hideContentWhenLoading isLoading={ isLoading(consignment.id) }>
-                  { this.renderNoShippingOptions(invalidShippingMessage) }
+              {(!consignment.availableShippingOptions || !consignment.availableShippingOptions.length) && (
+                <LoadingOverlay hideContentWhenLoading isLoading={isLoading(consignment.id)}>
+                  {this.renderNoShippingOptions(invalidShippingMessage)}
                 </LoadingOverlay>
-              ) }
+              )}
             </div>
-          )) }
+          ))}
       </>
     );
   }
@@ -128,7 +151,7 @@ class ShippingOptionsForm extends PureComponent<ShippingOptionsFormProps & Formi
   private renderNoShippingOptions(message: ReactNode): ReactNode {
     return (
       <div className="shippingOptions-panel optimizedCheckout-overlay">
-        <p className="shippingOptions-panel-message optimizedCheckout-primaryContent">{ message }</p>
+        <p className="shippingOptions-panel-message optimizedCheckout-primaryContent">{message}</p>
       </div>
     );
   }
@@ -142,9 +165,9 @@ class ShippingOptionsForm extends PureComponent<ShippingOptionsFormProps & Formi
           <TranslatedString id="shipping.shipping_address_heading" />
         </strong>
 
-        <StaticAddress address={ consignment.shippingAddress } />
+        <StaticAddress address={consignment.shippingAddress} />
 
-        <StaticConsignmentItemList cart={ cart } consignment={ consignment } />
+        <StaticConsignmentItemList cart={cart} consignment={consignment} />
       </div>
     );
   }
@@ -165,8 +188,8 @@ export default withFormik<ShippingOptionsFormProps, ShippingOptionsFormValues>({
   mapPropsToValues({ consignments }) {
     const shippingOptionIds: { [id: string]: string } = {};
 
-    (consignments || []).forEach(consignment => {
-      shippingOptionIds[consignment.id] = consignment.selectedShippingOption ? consignment.selectedShippingOption.id : '';
+    (consignments || []).forEach((consignment) => {
+      shippingOptionIds[consignment.id] = consignment.selectedShippingOption ? consignment.selectedShippingOption.id : "";
     });
 
     return { shippingOptionIds };
