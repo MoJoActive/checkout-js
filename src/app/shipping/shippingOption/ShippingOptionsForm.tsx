@@ -40,7 +40,7 @@ class ShippingOptionsForm extends PureComponent<ShippingOptionsFormProps & Formi
         case 'Shipping (Ground)':
             return ({...o, oldDescription: o.description, description: 'Ground Shipping', additionalDescription: 'Your package will arrive within 3 business days after shipping.', isRecommended: true });
         case 'Shipping (Pickup)':
-            return ({...o, oldDescription: o.description, description: 'Pickup - In Our Narvon, PA Store', additionalDescription: 'An email will be sent when your order is ready for Pickup.', isRecommended: false});
+            return ({...o, oldDescription: o.description, description: 'Pickup - In Store', additionalDescription: 'An email will be sent when your order is ready for Pickup.', isRecommended: false});
           default:
               return o;
       }
