@@ -35,6 +35,8 @@ class ShippingOptionsForm extends PureComponent<ShippingOptionsFormProps & Formi
 
     return options.map((o: ShippingOption) => {
       switch (o.description) {
+        case 'Shipping (Free Shipping)':
+            return ({...o, oldDescription: o.description, description: 'Free Shipping', additionalDescription: 'Free shipping on orders over $175 for select states.', isRecommended: true });
         case 'Shipping (Ground)':
             return ({...o, oldDescription: o.description, description: 'Ground Shipping', additionalDescription: 'Your package will arrive within 3 business days after shipping.', isRecommended: true });
         case 'Shipping (Pickup)':
