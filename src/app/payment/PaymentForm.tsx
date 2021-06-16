@@ -4,15 +4,15 @@ import { isNil, noop, omitBy } from 'lodash';
 import React, { memo, useCallback, useContext, useMemo, FunctionComponent } from 'react';
 import { ObjectSchema } from 'yup';
 
-import { withLanguage, TranslatedString, WithLanguageProps } from '../locale';
+import { withLanguage, WithLanguageProps } from '../locale';
 import { TermsConditions } from '../termsConditions';
-import { Fieldset, Form, FormContext, Legend } from '../ui/form';
+import { Fieldset, Form, FormContext } from '../ui/form';
 
+import { DocumentOnlyCustomFormFieldsetValues, FawryCustomFormFieldsetValues, IdealCustomFormFieldsetValues, SepaCustomFormFieldsetValues } from './checkoutcomFieldsets';
 import { CreditCardFieldsetValues } from './creditCard';
-import { DocumentOnlyCustomFormFieldsetValues } from './documentOnly';
 import getPaymentValidationSchema from './getPaymentValidationSchema';
 import { HostedCreditCardFieldsetValues } from './hostedCreditCard';
-import { getUniquePaymentMethodId, PaymentMethodId, PaymentMethodList } from './paymentMethod';
+import { getPaymentMethodName, getUniquePaymentMethodId, PaymentMethodId, PaymentMethodList } from './paymentMethod';
 import { CardInstrumentFieldsetValues } from './storedInstrument';
 import { StoreCreditField, StoreCreditOverlay } from './storeCredit';
 import PaymentRedeemables from './PaymentRedeemables';
@@ -52,6 +52,9 @@ export type PaymentFormValues = (
     HostedCreditCardFieldsetValues & PaymentFormCommonValues |
     HostedWidgetPaymentMethodValues & PaymentFormCommonValues |
     DocumentOnlyCustomFormFieldsetValues & PaymentFormCommonValues |
+    SepaCustomFormFieldsetValues & PaymentFormCommonValues |
+    FawryCustomFormFieldsetValues & PaymentFormCommonValues |
+    IdealCustomFormFieldsetValues & PaymentFormCommonValues |
     PaymentFormCommonValues
 );
 
@@ -73,6 +76,7 @@ const PaymentForm: FunctionComponent<PaymentFormProps & FormikProps<PaymentFormV
     isTermsConditionsRequired,
     isStoreCreditApplied,
     isUsingMultiShipping,
+    language,
     methods,
     onMethodSelect,
     onStoreCreditChange,
@@ -148,9 +152,11 @@ const PaymentForm: FunctionComponent<PaymentFormProps & FormikProps<PaymentFormV
                 { shouldHidePaymentSubmitButton ?
                     <PaymentMethodSubmitButtonContainer /> :
                     <PaymentSubmitButton
+                        initialisationStrategyType={ selectedMethod && selectedMethod.initializationStrategy?.type }
                         isDisabled={ shouldDisableSubmit }
                         methodGateway={ selectedMethod && selectedMethod.gateway }
                         methodId={ selectedMethodId }
+                        methodName={ selectedMethod && getPaymentMethodName(language)(selectedMethod) }
                         methodType={ selectedMethod && selectedMethod.method }
                     /> }
             </div>
@@ -198,6 +204,8 @@ const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProp
             ccCustomerCode: '',
             ccCvv: '',
             ccDocument: '',
+            customerEmail: '',
+            customerMobile: '',
             ccExpiry: '',
             ccName: '',
             ccNumber: '',
@@ -215,14 +223,8 @@ const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProp
         setSubmitted,
     ]);
 
-    const legend = useMemo(() => (
-        <Legend>
-            <TranslatedString id="payment.payment_method_label" />
-        </Legend>
-    ), []);
-
     return (
-        <Fieldset legend={ legend }>
+        <Fieldset>
             { !isPaymentDataRequired() && <StoreCreditOverlay /> }
 
             <PaymentMethodList
@@ -246,6 +248,8 @@ const paymentFormConfig: WithFormikConfig<PaymentFormProps & WithLanguageProps, 
         ccCustomerCode: '',
         ccCvv: '',
         ccDocument: '',
+        customerEmail: '',
+        customerMobile: '',
         ccExpiry: '',
         ccName: '',
         ccNumber: '',

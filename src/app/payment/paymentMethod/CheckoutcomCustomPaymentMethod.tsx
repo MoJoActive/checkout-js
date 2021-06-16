@@ -1,9 +1,11 @@
+import { BillingAddress } from '@bigcommerce/checkout-sdk';
 import React, { FunctionComponent } from 'react';
 
+import { withCheckout, CheckoutContextProps } from '../../checkout';
 import { withLanguage, WithLanguageProps } from '../../locale';
-import { TextFieldForm } from '../creditCard';
-import { documentPaymentMethods, getDocumentOnlyValidationSchema } from '../documentOnly';
+import { checkoutcomCustomPaymentMethods, checkoutcomPaymentMethods, getCheckoutcomValidationSchemas } from '../checkoutcomFieldsets';
 
+import checkoutcomCustomFormFields, { ccDocumentField } from './CheckoutcomCustomFormFields';
 import CreditCardPaymentMethod, { CreditCardPaymentMethodProps } from './CreditCardPaymentMethod';
 
 export interface CheckoutcomCustomPaymentMethodProps
@@ -11,29 +13,43 @@ export interface CheckoutcomCustomPaymentMethodProps
     checkoutCustomMethod: string;
 }
 
+interface WithCheckoutCheckoutcomCustomPaymentMethodProps {
+    debtor: BillingAddress;
+}
+
 const CheckoutcomCustomPaymentMethod: FunctionComponent<
-    CheckoutcomCustomPaymentMethodProps & WithLanguageProps
+    CheckoutcomCustomPaymentMethodProps & WithCheckoutCheckoutcomCustomPaymentMethodProps & WithLanguageProps
 > = ({ language, checkoutCustomMethod, ...rest }) => {
 
-    const checkoutcomCustomFieldset = (
-        <TextFieldForm
-            additionalClassName="form-field--ccDocument"
-            autoComplete="cc-document"
-            labelId="payment.credit_card_document_label"
-            name="ccDocument"
-        />
-    );
+    const CheckoutcomCustomFieldset = checkoutCustomMethod in checkoutcomCustomFormFields
+    ? checkoutcomCustomFormFields[checkoutCustomMethod as checkoutcomCustomPaymentMethods]
+    : ccDocumentField;
 
     return (
         <CreditCardPaymentMethod
             { ...rest }
-            cardFieldset={ checkoutcomCustomFieldset }
-            cardValidationSchema={ getDocumentOnlyValidationSchema({
-                paymentMethod: checkoutCustomMethod as documentPaymentMethods,
+            cardFieldset={ <CheckoutcomCustomFieldset debtor={ rest.debtor } method={ rest.method } /> }
+            cardValidationSchema={ getCheckoutcomValidationSchemas({
+                paymentMethod: checkoutCustomMethod as checkoutcomPaymentMethods,
                 language,
             }) }
         />
     );
 };
 
-export default withLanguage(CheckoutcomCustomPaymentMethod);
+function mapToCheckoutcomCustomPaymentMethodProps(
+    { checkoutState }: CheckoutContextProps
+): WithCheckoutCheckoutcomCustomPaymentMethodProps {
+    const { data: { getBillingAddress } } = checkoutState;
+    const billingAddress = getBillingAddress();
+
+    if (!billingAddress) {
+        throw new Error('Billing address is missing');
+    }
+
+    return {
+        debtor: billingAddress,
+    };
+}
+
+export default withLanguage(withCheckout(mapToCheckoutcomCustomPaymentMethodProps)(CheckoutcomCustomPaymentMethod));

@@ -1,11 +1,11 @@
-import { CheckoutSelectors, CheckoutSettings, OrderRequestBody, PaymentMethod } from '@bigcommerce/checkout-sdk';
+import { CartChangedError, CheckoutSelectors, CheckoutSettings, OrderRequestBody, PaymentMethod } from '@bigcommerce/checkout-sdk';
 import { memoizeOne } from '@bigcommerce/memoize';
 import { compact, find, isEmpty, noop } from 'lodash';
 import React, { Component, ReactNode } from 'react';
 import { ObjectSchema } from 'yup';
 
 import { withCheckout, CheckoutContextProps } from '../checkout';
-import { isRequestError, ErrorModal, ErrorModalOnCloseProps } from '../common/error';
+import { isCartChangedError, isRequestError, ErrorModal, ErrorModalOnCloseProps } from '../common/error';
 import { EMPTY_ARRAY } from '../common/utility';
 import { withLanguage, WithLanguageProps } from '../locale';
 import { TermsConditionsType } from '../termsConditions';
@@ -21,7 +21,7 @@ export interface PaymentProps {
     isEmbedded?: boolean;
     isUsingMultiShipping?: boolean;
     checkEmbeddedSupport?(methodIds: string[]): void; // TODO: We're currently doing this check in multiple places, perhaps we should move it up so this check get be done in a single place instead.
-    onCartChangedError?(error: Error): void;
+    onCartChangedError?(error: CartChangedError): void;
     onFinalize?(): void;
     onFinalizeError?(error: Error): void;
     onReady?(): void;
@@ -41,6 +41,7 @@ interface WithCheckoutPaymentProps {
     isTermsConditionsRequired: boolean;
     methods: PaymentMethod[];
     shouldExecuteSpamCheck: boolean;
+    shouldLocaliseErrorMessages: boolean;
     submitOrderError?: Error;
     termsConditionsText?: string;
     termsConditionsUrl?: string;
@@ -185,6 +186,7 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
         const {
             finalizeOrderError,
             language,
+            shouldLocaliseErrorMessages,
             submitOrderError,
         } = this.props;
 
@@ -203,7 +205,7 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
         return (
             <ErrorModal
                 error={ error }
-                message={ mapSubmitOrderErrorMessage(error, language.translate.bind(language)) }
+                message={ mapSubmitOrderErrorMessage(error, language.translate.bind(language), shouldLocaliseErrorMessages) }
                 onClose={ this.handleCloseModal }
                 title={ mapSubmitOrderErrorTitle(error, language.translate.bind(language)) }
             />
@@ -284,12 +286,16 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
             selectedMethod.id === PaymentMethodId.Checkoutcom ||
             selectedMethod.id === PaymentMethodId.Converge ||
             selectedMethod.id === PaymentMethodId.Laybuy ||
+            selectedMethod.id === PaymentMethodId.Quadpay ||
             selectedMethod.id === PaymentMethodId.SagePay ||
             selectedMethod.id === PaymentMethodId.Sezzle ||
+            selectedMethod.id === PaymentMethodId.Zip ||
             selectedMethod.gateway === PaymentMethodId.AdyenV2 ||
             selectedMethod.gateway === PaymentMethodId.AdyenV2GooglePay ||
             selectedMethod.gateway === PaymentMethodId.Afterpay ||
+            selectedMethod.gateway === PaymentMethodId.Clearpay ||
             selectedMethod.gateway === PaymentMethodId.Checkoutcom ||
+            selectedMethod.gateway === PaymentMethodId.Mollie ||
             selectedMethod.gateway === PaymentMethodId.StripeV3) {
             return;
         }
@@ -384,7 +390,7 @@ class Payment extends Component<PaymentProps & WithCheckoutPaymentProps & WithLa
                 return loadPaymentMethods();
             }
 
-            if (error.type === 'cart_changed') {
+            if (isCartChangedError(error)) {
                 return onCartChangedError(error);
             }
 
@@ -479,6 +485,7 @@ export function mapToPaymentProps({
 
     const {
         enableTermsAndConditions: isTermsConditionsEnabled,
+        features,
         orderTermsAndConditionsType: termsConditionsType,
         orderTermsAndConditions: termsCondtitionsText,
         orderTermsAndConditionsLink: termsCondtitionsUrl,
@@ -536,6 +543,7 @@ export function mapToPaymentProps({
         loadPaymentMethods: checkoutService.loadPaymentMethods,
         methods: filteredMethods,
         shouldExecuteSpamCheck: checkout.shouldExecuteSpamCheck,
+        shouldLocaliseErrorMessages: features['PAYMENTS-6799.localise_checkout_payment_error_messages'],
         submitOrder: checkoutService.submitOrder,
         submitOrderError: getSubmitOrderError(),
         termsConditionsText: isTermsConditionsRequired && termsConditionsType === TermsConditionsType.TextArea ?

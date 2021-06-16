@@ -1,4 +1,4 @@
-import { Address, Cart, CheckoutParams, CheckoutSelectors, Consignment, EmbeddedCheckoutMessenger, EmbeddedCheckoutMessengerOptions, FlashMessage, Promotion, RequestOptions, StepTracker } from '@bigcommerce/checkout-sdk';
+import { Address, Cart, CartChangedError, CheckoutParams, CheckoutSelectors, Consignment, EmbeddedCheckoutMessenger, EmbeddedCheckoutMessengerOptions, FlashMessage, Promotion, RequestOptions, StepTracker } from '@bigcommerce/checkout-sdk';
 import classNames from 'classnames';
 import { find, findIndex } from 'lodash';
 import React, { lazy, Component, ReactNode } from 'react';
@@ -501,7 +501,7 @@ class Checkout extends Component<CheckoutProps & WithCheckoutProps & WithLanguag
         return embeddedSupport.isSupported(...methodIds);
     };
 
-    private handleCartChangedError: () => void = () => {
+    private handleCartChangedError: (error: CartChangedError) => void = () => {
         this.navigateToStep(CheckoutStepType.Shipping);
     };
 

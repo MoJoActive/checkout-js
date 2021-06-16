@@ -1,8 +1,9 @@
-import React, { memo, FunctionComponent } from 'react';
+import React, { memo, Fragment, FunctionComponent } from 'react';
 
 import { withCheckout } from '../checkout';
 import { TranslatedString } from '../locale';
 import { Button, ButtonSize, ButtonVariant } from '../ui/button';
+import { IconBolt } from '../ui/icon';
 
 import { PaymentMethodId, PaymentMethodType } from './paymentMethod';
 
@@ -10,9 +11,19 @@ interface PaymentSubmitButtonTextProps {
     methodGateway?: string;
     methodId?: string;
     methodType?: string;
+    methodName?: string;
+    initialisationStrategyType?: string;
+    isPpsdkEnabled?: boolean;
 }
 
-const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> = memo(({ methodId, methodType, methodGateway }) => {
+const providersWithCustomClasses = [PaymentMethodId.Bolt];
+
+const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> = memo(({ methodId, methodName, methodType, methodGateway, isPpsdkEnabled = false, initialisationStrategyType }) => {
+
+    if (isPpsdkEnabled && methodName && initialisationStrategyType === 'NONE') {
+        return <TranslatedString data={ { methodName } } id="payment.ppsdk_continue_action" />;
+    }
+
     if (methodId === PaymentMethodId.Amazon) {
         return <TranslatedString id="payment.amazon_continue_action" />;
     }
@@ -22,7 +33,10 @@ const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> =
     }
 
     if (methodId === PaymentMethodId.Bolt) {
-        return <TranslatedString id="payment.bolt_continue_action" />;
+        return (<Fragment>
+            <IconBolt additionalClassName="payment-submit-button-bolt-icon" />
+            <TranslatedString id="payment.bolt_continue_action" />
+        </Fragment>);
     }
 
     if (methodGateway === PaymentMethodId.Barclaycard) {
@@ -49,19 +63,26 @@ const PaymentSubmitButtonText: FunctionComponent<PaymentSubmitButtonTextProps> =
         return <TranslatedString id="payment.paypal_credit_continue_action" />;
     }
 
+    if (methodId === PaymentMethodId.Quadpay) {
+        return <TranslatedString id="payment.quadpay_continue_action" />;
+    }
+
     return <TranslatedString id="payment.place_order_action" />;
 });
 
 export interface PaymentSubmitButtonProps {
     methodGateway?: string;
     methodId?: string;
+    methodName?: string;
     methodType?: string;
     isDisabled?: boolean;
+    initialisationStrategyType?: string;
 }
 
 interface WithCheckoutPaymentSubmitButtonProps {
     isInitializing?: boolean;
     isSubmitting?: boolean;
+    isPpsdkEnabled: boolean;
 }
 
 const PaymentSubmitButton: FunctionComponent<PaymentSubmitButtonProps & WithCheckoutPaymentSubmitButtonProps> = ({
@@ -70,9 +91,13 @@ const PaymentSubmitButton: FunctionComponent<PaymentSubmitButtonProps & WithChec
     isSubmitting,
     methodGateway,
     methodId,
+    methodName,
     methodType,
+    isPpsdkEnabled,
+    initialisationStrategyType,
 }) => (
         <Button
+            className={ providersWithCustomClasses.includes(methodId as PaymentMethodId) ? `payment-submit-button-${methodId}` : undefined }
             disabled={ isInitializing || isSubmitting || isDisabled }
             id="checkout-payment-continue"
             isFullWidth
@@ -82,14 +107,17 @@ const PaymentSubmitButton: FunctionComponent<PaymentSubmitButtonProps & WithChec
             variant={ ButtonVariant.Action }
         >
             <PaymentSubmitButtonText
+                initialisationStrategyType={ initialisationStrategyType }
+                isPpsdkEnabled={ isPpsdkEnabled }
                 methodGateway={ methodGateway }
                 methodId={ methodId }
+                methodName={ methodName }
                 methodType={ methodType }
             />
         </Button>
     );
 
-export default withCheckout(({ checkoutState }) => {
+export default withCheckout(({ checkoutState, checkoutService }) => {
     const {
         statuses: {
             isInitializingCustomer,
@@ -98,8 +126,15 @@ export default withCheckout(({ checkoutState }) => {
         },
     } = checkoutState;
 
+    const isPpsdkEnabled = Boolean(
+        checkoutService.getState()
+            .data.getConfig()
+            ?.checkoutSettings.features['PAYMENTS-6806.enable_ppsdk_strategy']
+    );
+
     return {
         isInitializing: isInitializingCustomer() || isInitializingPayment(),
         isSubmitting: isSubmittingOrder(),
+        isPpsdkEnabled,
     };
 })(memo(PaymentSubmitButton));

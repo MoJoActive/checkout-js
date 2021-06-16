@@ -34,6 +34,7 @@ describe('PaymentMethodTitle', () => {
         laybuy: '/img/payment-providers/laybuy-checkout-header.png',
         masterpass: 'https://masterpass.com/dyn/img/acc/global/mp_mark_hor_blk.svg',
         paypal: '/img/payment-providers/paypalpaymentsprouk.png',
+        quadpay: '/img/payment-providers/quadpay.png',
         sezzle: '/img/payment-providers/sezzle-checkout-header.png',
         zip: '/img/payment-providers/zip.png',
         paypalcommerce: '/img/payment-providers/paypal_commerce_logo.svg',
@@ -158,7 +159,9 @@ describe('PaymentMethodTitle', () => {
         const methodIds = [
             PaymentMethodId.Affirm,
             PaymentMethodId.Afterpay,
+            PaymentMethodId.Clearpay,
             PaymentMethodId.Klarna,
+            PaymentMethodId.Quadpay,
             PaymentMethodId.Sezzle,
             PaymentMethodId.Zip,
         ];
@@ -184,6 +187,7 @@ describe('PaymentMethodTitle', () => {
         const methodIds = [
             PaymentMethodId.Affirm,
             PaymentMethodId.Klarna,
+            PaymentMethodId.Quadpay,
             PaymentMethodId.Sezzle,
             PaymentMethodId.Zip,
         ];
@@ -271,5 +275,43 @@ describe('PaymentMethodTitle', () => {
 
         expect(component.find(CreditCardIconList).prop('selectedCardType'))
             .toEqual('visa');
+    });
+
+    it('renders only Checkout.com APMs logos based on their gateway id', () => {
+        const checkoutcomTitleComponent = (id: string) => mount(
+            <PaymentMethodTitleTest
+                { ...defaultProps }
+                method={ {
+                    ...defaultProps.method,
+                    method: PaymentMethodId.Checkoutcom,
+                    id,
+                } }
+            />
+        );
+        const baseURL = (id: string) => `/img/payment-providers/checkoutcom_${id}.svg`;
+
+        let component = checkoutcomTitleComponent('sepa');
+        expect(component.find('[data-test="payment-method-logo"]').prop('src'))
+            .toEqual(`${config.cdnPath}${baseURL('sepa')}`);
+
+        component = checkoutcomTitleComponent('oxxo');
+        expect(component.find('[data-test="payment-method-logo"]').prop('src'))
+            .toEqual(`${config.cdnPath}${baseURL('oxxo')}`);
+
+        component = checkoutcomTitleComponent('boleto');
+        expect(component.find('[data-test="payment-method-logo"]').prop('src'))
+            .toEqual(`${config.cdnPath}${baseURL('boleto')}`);
+
+        component = checkoutcomTitleComponent('qpay');
+        expect(component.find('[data-test="payment-method-logo"]').prop('src'))
+            .toEqual(`${config.cdnPath}${baseURL('qpay')}`);
+
+        component = checkoutcomTitleComponent('credit_card');
+        expect(component.find('[data-test="payment-method-name"]').text())
+            .toEqual(defaultProps.method.config.displayName);
+
+        component = checkoutcomTitleComponent('checkoutcom');
+        expect(component.find('[data-test="payment-method-name"]').text())
+            .toEqual(defaultProps.method.config.displayName);
     });
 });

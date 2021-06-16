@@ -1,6 +1,6 @@
 import { LanguageService, PaymentMethod } from '@bigcommerce/checkout-sdk';
 import { number } from 'card-validator';
-import { compact } from 'lodash';
+import { compact, startCase } from 'lodash';
 import React, { memo, Fragment, FunctionComponent } from 'react';
 
 import { withCheckout, CheckoutContextProps } from '../../checkout';
@@ -46,7 +46,7 @@ function getPaymentMethodTitle(
                 titleText: '',
             },
             [PaymentMethodId.PaypalCommerceCredit]: {
-                logoUrl: cdnPath('/img/payment-providers/paypal_commerce_credit_logo.svg'),
+                logoUrl: cdnPath('/img/payment-providers/paypal_commerce_pay_later.svg'),
                 titleText: '',
             },
             [PaymentMethodId.PaypalCommerceAlternativeMethod]: {
@@ -77,8 +77,16 @@ function getPaymentMethodTitle(
                 logoUrl: cdnPath('/img/payment-providers/chase-pay.png'),
                 titleText: '',
             },
+            [PaymentMethodId.Clearpay]: {
+                logoUrl: cdnPath('/img/payment-providers/clearpay-header.png'),
+                titleText: methodName,
+            },
             [PaymentMethodType.GooglePay]: {
                 logoUrl: cdnPath('/img/payment-providers/google-pay.png'),
+                titleText: '',
+            },
+            [PaymentMethodId.DigitalRiver]: {
+                logoUrl: cdnPath('/img/payment-providers/digital-river-header.png'),
                 titleText: '',
             },
             [PaymentMethodId.Klarna]: {
@@ -97,6 +105,10 @@ function getPaymentMethodTitle(
                 logoUrl: cdnPath('/img/payment-providers/paypalpaymentsprouk.png'),
                 titleText: '',
             },
+            [PaymentMethodId.Quadpay]: {
+                logoUrl: cdnPath('/img/payment-providers/quadpay.png'),
+                titleText: language.translate('payment.quadpay_display_name_text'),
+            },
             [PaymentMethodId.Sezzle]: {
                 logoUrl: cdnPath('/img/payment-providers/sezzle-checkout-header.png'),
                 titleText: language.translate('payment.sezzle_display_name_text'),
@@ -113,6 +125,18 @@ function getPaymentMethodTitle(
                 logoUrl: `https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/${(method.method === 'scheme') ? 'card' : method.method}.svg`,
                 titleText: (method.config.displayName === 'Credit Card' ? language.translate('payment.adyen_credit_debit_card_text') : method.config.displayName) || '',
             },
+            [PaymentMethodId.Mollie]: {
+                logoUrl: method.method === 'credit_card' ? '' : cdnPath(`/img/payment-providers/${method.method}.svg`),
+                titleText: method.method === 'credit_card' ? startCase(methodName) : methodName,
+            },
+            [PaymentMethodId.Checkoutcom]: {
+                logoUrl: ['credit_card', 'checkoutcom'].includes(method.id) ? '' : cdnPath(`/img/payment-providers/checkoutcom_${method.id.toLowerCase()}.svg`),
+                titleText: methodName,
+            },
+            [PaymentMethodId.StripeV3]: {
+                logoUrl: '',
+                titleText: method.method === 'iban' ? language.translate('payment.stripe_sepa_display_name_text') : methodName,
+            },
         };
 
         // KLUDGE: 'paypal' is actually a credit card method. It is the only
@@ -123,8 +147,8 @@ function getPaymentMethodTitle(
         }
 
         return (
-            customTitles[method.id] ||
             customTitles[method.gateway || ''] ||
+            customTitles[method.id] ||
             customTitles[method.method] ||
             customTitles[PaymentMethodType.CreditCard]
         );

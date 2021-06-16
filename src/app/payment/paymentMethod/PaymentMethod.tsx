@@ -3,6 +3,7 @@ import React, { memo, FunctionComponent } from 'react';
 
 import { withCheckout, CheckoutContextProps } from '../../checkout';
 
+import getUniquePaymentMethodId from './getUniquePaymentMethodId';
 import AdyenV2PaymentMethod from './AdyenV2PaymentMethod';
 import AffirmPaymentMethod from './AffirmPaymentMethod';
 import AmazonPaymentMethod from './AmazonPaymentMethod';
@@ -14,12 +15,15 @@ import BraintreeCreditCardPaymentMethod from './BraintreeCreditCardPaymentMethod
 import ChasePayPaymentMethod from './ChasePayPaymentMethod';
 import CheckoutCustomPaymentMethod from './CheckoutcomCustomPaymentMethod';
 import CCAvenueMarsPaymentMethod from './CCAvenueMarsPaymentMethod';
+import DigitalRiverPaymentMethod from './DigitalRiverPaymentMethod';
 import GooglePayPaymentMethod from './GooglePayPaymentMethod';
 import HostedCreditCardPaymentMethod from './HostedCreditCardPaymentMethod';
 import HostedPaymentMethod from './HostedPaymentMethod';
 import KlarnaPaymentMethod from './KlarnaPaymentMethod';
 import KlarnaV2PaymentMethod from './KlarnaV2PaymentMethod';
 import MasterpassPaymentMethod from './MasterpassPaymentMethod';
+import MolliePaymentMethod from './MolliePaymentMethod';
+import MonerisPaymentMethod from './MonerisPaymentMethod';
 import OfflinePaymentMethod from './OfflinePaymentMethod';
 import PaymentMethodId from './PaymentMethodId';
 import PaymentMethodProviderType from './PaymentMethodProviderType';
@@ -28,6 +32,7 @@ import PaypalCommerceCreditCardPaymentMethod from './PaypalCommerceCreditCardPay
 import PaypalCommercePaymentMethod from './PaypalCommercePaymentMethod';
 import PaypalExpressPaymentMethod from './PaypalExpressPaymentMethod';
 import PaypalPaymentsProPaymentMethod from './PaypalPaymentsProPaymentMethod';
+import PPSDKPaymentMethod from './PPSDKPaymentMethod';
 import SquarePaymentMethod from './SquarePaymentMethod';
 import StripePaymentMethod from './StripePaymentMethod';
 import VisaCheckoutPaymentMethod from './VisaCheckoutPaymentMethod';
@@ -41,6 +46,7 @@ export interface PaymentMethodProps {
 }
 
 export interface WithCheckoutPaymentMethodProps {
+    isPpsdkEnabled: boolean;
     isInitializing: boolean;
     deinitializeCustomer(options: CustomerRequestOptions): Promise<CheckoutSelectors>;
     deinitializePayment(options: PaymentRequestOptions): Promise<CheckoutSelectors>;
@@ -59,7 +65,11 @@ export interface WithCheckoutPaymentMethodProps {
  */
 // tslint:disable:cyclomatic-complexity
 const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckoutPaymentMethodProps> = props => {
-    const { method } = props;
+    const { method, isPpsdkEnabled } = props;
+
+    if (isPpsdkEnabled && method.type === PaymentMethodProviderType.PPSDK) {
+        return <PPSDKPaymentMethod { ...props } />;
+    }
 
     if (method.gateway === PaymentMethodId.AdyenV2) {
         return <AdyenV2PaymentMethod { ...props } />;
@@ -89,6 +99,10 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
         return <BlueSnapV2PaymentMethod { ...props } />;
     }
 
+    if (method.id === PaymentMethodId.DigitalRiver) {
+        return <DigitalRiverPaymentMethod { ...props } />;
+    }
+
     if (method.gateway === PaymentMethodId.Klarna) {
         return <KlarnaV2PaymentMethod { ...props } />;
     }
@@ -110,7 +124,17 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
             return <HostedCreditCardPaymentMethod { ...props } />;
         }
 
-        return <CheckoutCustomPaymentMethod checkoutCustomMethod={ method.id } { ...props } />;
+        if (method.id === PaymentMethodId.Boleto ||
+            method.id === PaymentMethodId.Ideal ||
+            method.id === PaymentMethodId.Fawry ||
+            method.id === PaymentMethodId.Oxxo ||
+            method.id === PaymentMethodId.Qpay ||
+            method.id === PaymentMethodId.Sepa
+            ) {
+            return <CheckoutCustomPaymentMethod checkoutCustomMethod={ method.id } { ...props } />;
+        }
+
+        return <HostedPaymentMethod { ...props } />;
     }
 
     if (method.id === PaymentMethodId.BraintreeVisaCheckout) {
@@ -141,7 +165,11 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
     if (method.id === PaymentMethodId.PaypalCommerce ||
         method.id === PaymentMethodId.PaypalCommerceCredit ||
         method.gateway === PaymentMethodId.PaypalCommerceAlternativeMethod) {
-        return <PaypalCommercePaymentMethod { ...props } />;
+        return <PaypalCommercePaymentMethod
+            { ...props }
+            isAPM={ method.gateway === PaymentMethodId.PaypalCommerceAlternativeMethod }
+            uniqueId={ getUniquePaymentMethodId(method.id, method.gateway) }
+        />;
     }
 
     if (method.id === PaymentMethodId.PaypalExpress) {
@@ -161,8 +189,14 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
         return <BoltPaymentMethod { ...props } />;
     }
 
+    if (method.id === PaymentMethodId.Moneris) {
+        return <MonerisPaymentMethod { ...props } />;
+    }
+
     if (method.gateway === PaymentMethodId.Afterpay ||
+        method.gateway === PaymentMethodId.Clearpay ||
         method.id === PaymentMethodId.Laybuy ||
+        method.id === PaymentMethodId.Quadpay ||
         method.id === PaymentMethodId.Sezzle ||
         method.id === PaymentMethodId.Zip ||
         method.method === PaymentMethodType.Paypal ||
@@ -175,6 +209,9 @@ const PaymentMethodComponent: FunctionComponent<PaymentMethodProps & WithCheckou
         return <OfflinePaymentMethod { ...props } />;
     }
 
+    if (method.gateway === PaymentMethodId.Mollie) {
+        return <MolliePaymentMethod { ...props } />;
+    }
     // NOTE: Some payment methods have `method` as `credit-card` but they are
     // actually not. Therefore, as a workaround, we are doing the following
     // check last.
@@ -194,12 +231,19 @@ function mapToWithCheckoutPaymentMethodProps(
         statuses: { isInitializingPayment },
     } = checkoutState;
 
+    const isPpsdkEnabled = Boolean(
+        checkoutService.getState()
+            .data.getConfig()
+            ?.checkoutSettings.features['PAYMENTS-6806.enable_ppsdk_strategy']
+    );
+
     return {
         deinitializeCustomer: checkoutService.deinitializeCustomer,
         deinitializePayment: checkoutService.deinitializePayment,
         initializeCustomer: checkoutService.initializeCustomer,
         initializePayment: checkoutService.initializePayment,
         isInitializing: isInitializingPayment(method.id),
+        isPpsdkEnabled,
     };
 }
 
